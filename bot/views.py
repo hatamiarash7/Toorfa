@@ -140,7 +140,7 @@ def get_msg(request):
                 author_id=2
             )
 
-    return HttpResponseRedirect('/bot/chat')
+    return HttpResponseRedirect('/')
 
 
 def get_response(text):
@@ -240,7 +240,7 @@ def delete_messages(request):
     # S3P.objects.all().delete()
     # Sentence.objects.all().delete()
     # Object.objects.all().delete()
-    return HttpResponseRedirect('/bot/chat')
+    return HttpResponseRedirect('/')
 
 
 def delete_all(request):
@@ -254,7 +254,7 @@ def delete_all(request):
     S3P.objects.all().delete()
     Sentence.objects.all().delete()
     Object.objects.all().delete()
-    return HttpResponseRedirect('/bot/chat')
+    return HttpResponseRedirect('/')
 
 
 def add_to_db(structure, content):
