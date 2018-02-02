@@ -18,6 +18,9 @@ class Message(models.Model):
 
 
 class Object(models.Model):
+    name = models.CharField(max_length=50, null=False, default="thing")
+    description = models.TextField(null=True)
+    parent_id = models.IntegerField(null=True)
     color = models.CharField(max_length=50, null=True)
     material = models.CharField(max_length=50, null=True)
     size_x = models.IntegerField(null=True)
@@ -32,7 +35,17 @@ class Object(models.Model):
     created_place = models.CharField(max_length=50, null=True)
     temp_status = models.CharField(max_length=100, null=True)
     temp_degree = models.IntegerField(null=True)
-    description = models.TextField(null=True)
+    temporary = models.NullBooleanField(null=True, default=False)
+
+    def get(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parent": self.parent_id,
+            "color": self.color,
+            "material": self.material,
+            "weight": self.weight,
+        }
 
 
 class S2P(models.Model):

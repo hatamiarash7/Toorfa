@@ -6,6 +6,7 @@ import os
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
 from hazm import *
+from random import random
 
 from .models import *
 
@@ -50,7 +51,6 @@ def chat(request):
 def chat2():
     """
         show list of all messages
-        :param request: None
         :return: messages from db
         """
     msg_list = Message.objects.order_by('-date')
@@ -113,8 +113,8 @@ def get_msg(request):
                     msg == "چه میدانم" or msg == "چه می دانم" or msg == "باشه" or msg == "حله" or msg == "خوبه" or \
                     msg == "عالیه" or msg == "آفرین" or msg == "احسنت" or msg == "باریکلا" or msg == "امیدوارم" or msg == "انشالله" or \
                     msg == "ایشالا" or msg == "ممنون" or msg == "تشکر" or msg == "خواهش" or msg == "خواهش میکنم" or msg == "تشکر میکنم" or \
-                    msg == "خواهش می کنم" or msg == "تشکر می کنم" or msg == "متشکرم" or msg == "مچکرم" or msg == "سپاسگزارم" or\
-                    msg=="خب" or msg=="خب دیگه":
+                    msg == "خواهش می کنم" or msg == "تشکر می کنم" or msg == "متشکرم" or msg == "مچکرم" or msg == "سپاسگزارم" or \
+                    msg == "خب" or msg == "خب دیگه":
         pass
     elif msg == "خداحافظ" or msg == "بدرود" or msg == "بای" or msg == "خدانگهدار" or msg == "خدا نگهدار":
         Message.objects.create(
@@ -122,9 +122,9 @@ def get_msg(request):
             date=datetime.datetime.today(),
             author_id=2
         )
-    elif msg=="کاری نداری ؟" or msg=="کاری ندارید ؟" or msg=="آیا کاری نداری ؟" or msg=="آیا کاری ندارید ؟" \
-            or msg=="آیا با من کاری نداری ؟" or msg== "آیا با من کاری ندارید ؟" or msg=="با من کاری نداری ؟" or \
-            msg == "با من کاری ندارید ؟" or msg=="امری نیست ؟":
+    elif msg == "کاری نداری ؟" or msg == "کاری ندارید ؟" or msg == "آیا کاری نداری ؟" or msg == "آیا کاری ندارید ؟" \
+            or msg == "آیا با من کاری نداری ؟" or msg == "آیا با من کاری ندارید ؟" or msg == "با من کاری نداری ؟" or \
+                    msg == "با من کاری ندارید ؟" or msg == "امری نیست ؟":
         Message.objects.create(
             body="خیر. سلامت باشید",
             date=datetime.datetime.today(),
@@ -132,7 +132,7 @@ def get_msg(request):
         )
     else:
         output = get_response2(msg)
-        if output is None: output = "نی دونم"
+        if output is None: output = null_answer()
         if output != -1:
             bot_message = Message.objects.create(
                 body=output,
@@ -207,9 +207,17 @@ def get_response2(text):
         "اسم": "نام",
         "اسمتان": "نامتان",
         "اسمت": "نامت",
-        "شد": "است"
+        "شد": "است",
+
+        "دارید": "دارم",
+        "داری": "دارم",
+        "خوردید": "خوردم",
+        "خوردی": "خوردم",
+        "کردید": "کردم",
+        "کردی": "کردم",
     }
     tokens = [replaces.get(n, n) for n in tokens]
+    # if we have a question
     if ord(text[-1:]) == 1567 or ord(text[-1:]) == 63:
         return find_answer2(tokens)
     else:
@@ -217,6 +225,7 @@ def get_response2(text):
         for i in range(0, len(tokens)):
             a['T%s' % str(i + 1)] = tokens[i]
         Sentence.objects.create(Count=len(tokens), **a)
+        AddObject(tokens)
     return -1
 
 
@@ -227,9 +236,24 @@ def delete_messages(request):
     :return: None
     """
     Message.objects.all().delete()
+    # S2P.objects.all().delete()
+    # S3P.objects.all().delete()
+    # Sentence.objects.all().delete()
+    # Object.objects.all().delete()
+    return HttpResponseRedirect('/bot/chat')
+
+
+def delete_all(request):
+    """
+        delete all messages
+        :param request: None
+        :return: None
+        """
+    Message.objects.all().delete()
     S2P.objects.all().delete()
     S3P.objects.all().delete()
     Sentence.objects.all().delete()
+    Object.objects.all().delete()
     return HttpResponseRedirect('/bot/chat')
 
 
@@ -312,7 +336,7 @@ def find_answer2(tokens):
                 if counter2 == l2.Count - 2: answer = l2
                 # print("L " + str(l2.id) + ":" + str(counter2) + " - " + str(l2.Count))
         if answer is None:
-            answer = "نمی دونم"
+            answer = null_answer()
         else:
             answer = answer.get()
         return answer
@@ -353,5 +377,39 @@ def find_answer2(tokens):
                 elif counter == l.Count - 1:
                     answer = "خیر"
                 else:
-                    answer = "نمی دونم"
+                    answer = null_answer()
         return answer
+
+
+def AddObject(tokens):
+    l = len(tokens)
+    if tokens[l - 1] == "است":
+        ok = Object.objects.filter(name=tokens[0], temporary=False)
+        if len(ok) == 0:
+            objects = Object.objects.filter(name=tokens[0], temporary=True)
+            if len(objects) != 0:
+                parent = Object.objects.create(name=tokens[l - 2])
+                objects.update(parent_id=parent.id, temporary=False)
+            else:
+                Object.objects.create(name=tokens[0], temporary=True)
+                bot_message = Message.objects.create(
+                    body=tokens[0] + " چیست ؟",
+                    date=datetime.datetime.today(),
+                    author_id=2
+                )
+
+
+def null_answer():
+    i = int(random() * 10)
+    if i <= 2:
+        i = i
+    else:
+        i = 0
+    return nothing[i]
+
+
+nothing = [
+    "نمی دونم",
+    "نمی دونم , شاید",
+    "اطلاعی ندارم"
+]
